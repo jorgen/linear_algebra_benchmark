@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #define generate_run_function(NAME) \
-	void run_##NAME##(AABB *boxes, size_t boxes_count, Vec *pos) \
+	std::vector<Vec> run_##NAME##(AABB *boxes, size_t boxes_count, Vec *pos) \
 	{ \
 		std::vector<Vec> result; \
 	    result.resize(boxes_count); \
@@ -18,12 +18,12 @@
 		}  \
 		auto end = std::chrono::high_resolution_clock::now(); \
 		std::chrono::duration<double> elapsed_seconds = end - start; \
-		Vec r_vec = result[std::rand() % result.size()]; \
-		fprintf(stdout, "Time " # NAME " is %f with x y z beign %f %f %f\n", elapsed_seconds.count(), r_vec.x, r_vec.y, r_vec.z); \
+		fprintf(stdout, "Time " # NAME " is %f\n", elapsed_seconds.count()); \
+		return result; \
 	}
 
 #define generate_run_function_result_as_parameter(NAME) \
-	void run_##NAME##(AABB *boxes, size_t boxes_count, Vec *pos) \
+	std::vector<Vec> run_##NAME##(AABB *boxes, size_t boxes_count, Vec *pos) \
 	{ \
 		std::vector<Vec> result; \
 	    result.resize(boxes_count); \
@@ -37,8 +37,8 @@
 		}  \
 		auto end = std::chrono::high_resolution_clock::now(); \
 		std::chrono::duration<double> elapsed_seconds = end - start; \
-		Vec r_vec = result[std::rand() % result.size()]; \
-		fprintf(stdout, "Time " # NAME " is %f with x y z beign %f %f %f\n", elapsed_seconds.count(), r_vec.x, r_vec.y, r_vec.z); \
+		fprintf(stdout, "Time " # NAME " is %f\n", elapsed_seconds.count()); \
+		return result; \
 	}
 
 struct Vec
@@ -54,6 +54,14 @@ struct Vec
 		double p[3];
 	};
 
+	bool operator==(const Vec &other) const 
+	{
+		return memcmp(p, other.p, sizeof(p)) == 0;
+	}
+	bool operator!=(const Vec &other) const 
+	{
+		return memcmp(p, other.p, sizeof(p));
+	}
 	inline void set(double x, double y, double z)
 	{
 		this->x = x;
@@ -111,12 +119,12 @@ inline Vec furthest_point_of_aabb(const AABB & __restrict bb, const Vec & __rest
 {
 	Vec r;
 
-	double x_diff_min = bb.min.x > from.x ? bb.min.x - from.x : from.x - bb.min.x;
-	double y_diff_min = bb.min.y > from.y ? bb.min.y - from.y : from.y - bb.min.y;
-	double z_diff_min = bb.min.z > from.z ? bb.min.z - from.z : from.z - bb.min.z;
-	double x_diff_max = bb.max.x > from.x ? bb.max.x - from.x : from.x - bb.max.x;
-	double y_diff_max = bb.max.y > from.y ? bb.max.y - from.y : from.y - bb.max.y;
-	double z_diff_max = bb.max.z > from.z ? bb.max.z - from.z : from.z - bb.max.z;
+	double x_diff_min = std::abs(bb.min.x - from.x);
+	double y_diff_min = std::abs(bb.min.y - from.y);
+	double z_diff_min = std::abs(bb.min.z - from.z);
+	double x_diff_max = std::abs(bb.max.x - from.x);
+	double y_diff_max = std::abs(bb.max.y - from.y);
+	double z_diff_max = std::abs(bb.max.z - from.z);
 
 	r.x = x_diff_min < x_diff_max ? bb.max.x : bb.min.x;
 	r.y = y_diff_min < y_diff_max ? bb.max.y : bb.min.y;
@@ -256,17 +264,38 @@ generate_run_function_result_as_parameter(furthest_point_of_aabb_2_no_return);
 generate_run_function(furthest_point_of_aabb_3);
 generate_run_function_result_as_parameter(furthest_point_of_aabb_3_no_return);
 
+void verify_results(const std::vector<std::vector<Vec>> &results)
+{
+	if (results.size() < 2)
+		return;
+
+	for (size_t result_i = 1; result_i < results.size(); result_i++)
+	{
+		for (size_t i = 0; i < results[result_i].size(); i++)
+		{
+			if (results[0][i] != results[result_i][i])
+			{
+				fprintf(stderr, "Results are not correct %zu - %zu\n", result_i, i);
+				return;
+			}
+		}
+	}
+}
+
 int main()
 {
 	std::vector<AABB> boxes;
-	boxes.resize(1 << 20);
+	boxes.resize(1 << 12);
 	Vec pos;
 	setup(boxes.data(), boxes.size(), &pos);
-	run_furthest_point_of_aabb(boxes.data(), boxes.size(), &pos);
-	run_furthest_point_of_aabb_no_return(boxes.data(), boxes.size(), &pos);
-	run_furthest_point_of_aabb_2(boxes.data(), boxes.size(), &pos);
-	run_furthest_point_of_aabb_2_no_return(boxes.data(), boxes.size(), &pos);
-	run_furthest_point_of_aabb_3(boxes.data(), boxes.size(), &pos);
-	run_furthest_point_of_aabb_3_no_return(boxes.data(), boxes.size(), &pos);
+	std::vector<std::vector<Vec>> results;
+	results.push_back(run_furthest_point_of_aabb(boxes.data(), boxes.size(), &pos));
+	results.push_back(run_furthest_point_of_aabb_no_return(boxes.data(), boxes.size(), &pos));
+	results.push_back(run_furthest_point_of_aabb_2(boxes.data(), boxes.size(), &pos));
+	results.push_back(run_furthest_point_of_aabb_2_no_return(boxes.data(), boxes.size(), &pos));
+	results.push_back(run_furthest_point_of_aabb_3(boxes.data(), boxes.size(), &pos));
+	results.push_back(run_furthest_point_of_aabb_3_no_return(boxes.data(), boxes.size(), &pos));
+
+	verify_results(results);
 	return 0;
 }
