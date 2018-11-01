@@ -116,9 +116,12 @@ void run_furthest_1(AABB *boxes, size_t boxes_count, Vec *pos)
 	std::vector<Vec> result;
 	result.resize(boxes_count);
 	auto start = std::chrono::high_resolution_clock::now();
-	for (size_t i = 0; i < boxes_count; i++)
+	for (size_t n = 0; n < 1000; n++)
 	{
-		result[i] = furthest_point_of_aabb(boxes[i], *pos);
+		for (size_t i = 0; i < boxes_count; i++)
+		{
+			result[i] = furthest_point_of_aabb(boxes[i], *pos);
+		}
 	}
 	auto end = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end - start;
@@ -132,9 +135,12 @@ void run_furthest_2(AABB *boxes, size_t boxes_count, Vec *pos)
 	std::vector<Vec> result;
 	result.resize(boxes_count);
 	auto start = std::chrono::high_resolution_clock::now();
-	for (size_t i = 0; i < boxes_count; i++)
+	for (size_t n = 0; n < 1000; n++)
 	{
-		result[i] = furthest_point_of_aabb_2(boxes[i], *pos);
+		for (size_t i = 0; i < boxes_count; i++)
+		{
+			result[i] = furthest_point_of_aabb_2(boxes[i], *pos);
+		}
 	}
 	auto end = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end - start;
@@ -145,7 +151,7 @@ void run_furthest_2(AABB *boxes, size_t boxes_count, Vec *pos)
 int main()
 {
 	std::vector<AABB> boxes;
-	boxes.resize(1 << 28);
+	boxes.resize(1 << 20);
 	Vec pos;
 	setup(boxes.data(), boxes.size(), &pos);
 	run_furthest_1(boxes.data(), boxes.size(), &pos);
