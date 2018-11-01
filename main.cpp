@@ -139,7 +139,7 @@ inline void furthest_point_of_aabb_no_return(const AABB & __restrict bb, const V
 	r.z = z_diff_min < z_diff_max ? bb.max.z : bb.min.z;
 }
 
-Vec furthest_point_of_aabb_2(const AABB &bb, const Vec &from)
+Vec furthest_point_of_aabb_2(const AABB & __restrict bb, const Vec & __restrict from)
 {
     Vec r;
     Vec c = bb.center();
@@ -164,7 +164,29 @@ Vec furthest_point_of_aabb_2(const AABB &bb, const Vec &from)
     return r;
 }
 
-Vec furthest_point_of_aabb_3(const AABB &bb, const Vec &from)
+void furthest_point_of_aabb_2_no_return(const AABB & __restrict bb, const Vec & __restrict from, Vec & __restrict r)
+{
+    Vec c = bb.center();
+
+    if (from.x >= c.x && from.y >= c.y && from.z >= c.z)
+        r.set(bb.min.x, bb.min.y, bb.min.z);
+    else if (from.x < c.x && from.y >= c.y && from.z >= c.z)
+        r.set(bb.max.x, bb.min.y, bb.min.z);
+    else if (from.x >= c.x && from.y < c.y && from.z >= c.z)
+        r.set(bb.min.x, bb.max.y, bb.min.z);
+    else if (from.x < c.x && from.y < c.y && from.z >= c.z)
+        r.set(bb.max.x, bb.max.y, bb.min.z);
+    else if (from.x >= c.x && from.y >= c.y && from.z < c.z)
+        r.set(bb.min.x, bb.min.y, bb.max.z);
+    else if (from.x < c.x && from.y >= c.y && from.z < c.z)
+        r.set(bb.max.x, bb.min.y, bb.max.z);
+    else if (from.x >= c.x && from.y < c.y && from.z < c.z)
+        r.set(bb.min.x, bb.max.y, bb.max.z);
+    else //(from.x < c.x && from.y < c.y && from.z < c.z)
+        r.set(bb.max.x, bb.max.y, bb.max.z);
+}
+
+Vec furthest_point_of_aabb_3(const AABB & __restrict bb, const Vec & __restrict from)
 {
     Vec r;
     double cx = (bb.min.x + bb.max.x) * 0.5;
@@ -197,10 +219,42 @@ Vec furthest_point_of_aabb_3(const AABB &bb, const Vec &from)
     return r;
 }
 
+void furthest_point_of_aabb_3_no_return(const AABB & __restrict bb, const Vec & __restrict from, Vec & __restrict r)
+{
+    double cx = (bb.min.x + bb.max.x) * 0.5;
+    double cy = (bb.min.y + bb.max.y) * 0.5;
+    double cz = (bb.min.z + bb.max.z) * 0.5;
+
+    if (from.x >= cx)
+        if (from.y >= cy)
+            if (from.z >= cz)
+                r.set(bb.min.x, bb.min.y, bb.min.z);
+            else
+                r.set(bb.min.x, bb.min.y, bb.max.z);
+        else
+            if (from.z >= cz)
+                r.set(bb.min.x, bb.max.y, bb.min.z);
+            else
+                r.set(bb.min.x, bb.max.y, bb.max.z);
+    else
+        if (from.y >= cy)
+            if (from.z >= cz)
+                r.set(bb.max.x, bb.min.y, bb.min.z);
+            else
+                r.set(bb.max.x, bb.min.y, bb.max.z);
+        else
+            if (from.z >= cz)
+                r.set(bb.max.x, bb.max.y, bb.min.z);
+            else
+                r.set(bb.max.x, bb.max.y, bb.max.z);
+}
+
 generate_run_function(furthest_point_of_aabb);
 generate_run_function_result_as_parameter(furthest_point_of_aabb_no_return);
 generate_run_function(furthest_point_of_aabb_2);
+generate_run_function_result_as_parameter(furthest_point_of_aabb_2_no_return);
 generate_run_function(furthest_point_of_aabb_3);
+generate_run_function_result_as_parameter(furthest_point_of_aabb_3_no_return);
 
 int main()
 {
@@ -211,6 +265,8 @@ int main()
 	run_furthest_point_of_aabb(boxes.data(), boxes.size(), &pos);
 	run_furthest_point_of_aabb_no_return(boxes.data(), boxes.size(), &pos);
 	run_furthest_point_of_aabb_2(boxes.data(), boxes.size(), &pos);
+	run_furthest_point_of_aabb_2_no_return(boxes.data(), boxes.size(), &pos);
 	run_furthest_point_of_aabb_3(boxes.data(), boxes.size(), &pos);
+	run_furthest_point_of_aabb_3_no_return(boxes.data(), boxes.size(), &pos);
 	return 0;
 }
