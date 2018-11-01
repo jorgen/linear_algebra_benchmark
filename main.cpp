@@ -19,9 +19,27 @@
 		auto end = std::chrono::high_resolution_clock::now(); \
 		std::chrono::duration<double> elapsed_seconds = end - start; \
 		Vec r_vec = result[std::rand() % result.size()]; \
-		fprintf(stderr, "Time " # NAME " is %f with x y z beign %f %f %f\n", elapsed_seconds.count(), r_vec.x, r_vec.y, r_vec.z); \
+		fprintf(stdout, "Time " # NAME " is %f with x y z beign %f %f %f\n", elapsed_seconds.count(), r_vec.x, r_vec.y, r_vec.z); \
 	}
 
+#define generate_run_function_result_as_parameter(NAME) \
+	void run_##NAME##(AABB *boxes, size_t boxes_count, Vec *pos) \
+	{ \
+		std::vector<Vec> result; \
+	    result.resize(boxes_count); \
+		auto start = std::chrono::high_resolution_clock::now(); \
+		for (size_t n = 0; n < 1000; n++) \
+		{ \
+			for (size_t i = 0; i < boxes_count; i++) \
+			{ \
+				NAME(boxes[i], *pos, result[i]); \
+			} \
+		}  \
+		auto end = std::chrono::high_resolution_clock::now(); \
+		std::chrono::duration<double> elapsed_seconds = end - start; \
+		Vec r_vec = result[std::rand() % result.size()]; \
+		fprintf(stdout, "Time " # NAME " is %f with x y z beign %f %f %f\n", elapsed_seconds.count(), r_vec.x, r_vec.y, r_vec.z); \
+	}
 
 struct Vec
 {
@@ -89,7 +107,7 @@ void setup(AABB *boxes, size_t boxes_size, Vec *pos)
 
 }
 
-inline Vec furthest_point_of_aabb(const AABB &bb, const Vec &from)
+inline Vec furthest_point_of_aabb(const AABB & __restrict bb, const Vec & __restrict from)
 {
 	Vec r;
 
@@ -105,6 +123,20 @@ inline Vec furthest_point_of_aabb(const AABB &bb, const Vec &from)
 	r.z = z_diff_min < z_diff_max ? bb.max.z : bb.min.z;
 
 	return r;
+}
+
+inline void furthest_point_of_aabb_no_return(const AABB & __restrict bb, const Vec & __restrict from, Vec & __restrict r)
+{
+	double x_diff_min = bb.min.x > from.x ? bb.min.x - from.x : from.x - bb.min.x;
+	double y_diff_min = bb.min.y > from.y ? bb.min.y - from.y : from.y - bb.min.y;
+	double z_diff_min = bb.min.z > from.z ? bb.min.z - from.z : from.z - bb.min.z;
+	double x_diff_max = bb.max.x > from.x ? bb.max.x - from.x : from.x - bb.max.x;
+	double y_diff_max = bb.max.y > from.y ? bb.max.y - from.y : from.y - bb.max.y;
+	double z_diff_max = bb.max.z > from.z ? bb.max.z - from.z : from.z - bb.max.z;
+
+	r.x = x_diff_min < x_diff_max ? bb.max.x : bb.min.x;
+	r.y = y_diff_min < y_diff_max ? bb.max.y : bb.min.y;
+	r.z = z_diff_min < z_diff_max ? bb.max.z : bb.min.z;
 }
 
 Vec furthest_point_of_aabb_2(const AABB &bb, const Vec &from)
@@ -131,6 +163,7 @@ Vec furthest_point_of_aabb_2(const AABB &bb, const Vec &from)
 
     return r;
 }
+
 Vec furthest_point_of_aabb_3(const AABB &bb, const Vec &from)
 {
     Vec r;
@@ -165,6 +198,7 @@ Vec furthest_point_of_aabb_3(const AABB &bb, const Vec &from)
 }
 
 generate_run_function(furthest_point_of_aabb);
+generate_run_function_result_as_parameter(furthest_point_of_aabb_no_return);
 generate_run_function(furthest_point_of_aabb_2);
 generate_run_function(furthest_point_of_aabb_3);
 
@@ -175,6 +209,7 @@ int main()
 	Vec pos;
 	setup(boxes.data(), boxes.size(), &pos);
 	run_furthest_point_of_aabb(boxes.data(), boxes.size(), &pos);
+	run_furthest_point_of_aabb_no_return(boxes.data(), boxes.size(), &pos);
 	run_furthest_point_of_aabb_2(boxes.data(), boxes.size(), &pos);
 	run_furthest_point_of_aabb_3(boxes.data(), boxes.size(), &pos);
 	return 0;
