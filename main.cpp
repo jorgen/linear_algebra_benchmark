@@ -3,6 +3,26 @@
 #include <vector>
 #include <stdio.h>
 
+#define generate_run_function(NAME) \
+	void run_##NAME##(AABB *boxes, size_t boxes_count, Vec *pos) \
+	{ \
+		std::vector<Vec> result; \
+	    result.resize(boxes_count); \
+		auto start = std::chrono::high_resolution_clock::now(); \
+		for (size_t n = 0; n < 1000; n++) \
+		{ \
+			for (size_t i = 0; i < boxes_count; i++) \
+			{ \
+				result[i] = NAME(boxes[i], *pos); \
+			} \
+		}  \
+		auto end = std::chrono::high_resolution_clock::now(); \
+		std::chrono::duration<double> elapsed_seconds = end - start; \
+		Vec r_vec = result[std::rand() % result.size()]; \
+		fprintf(stderr, "Time " # NAME " is %f with x y z beign %f %f %f\n", elapsed_seconds.count(), r_vec.x, r_vec.y, r_vec.z); \
+	}
+
+
 struct Vec
 {
 	union
@@ -111,50 +131,51 @@ Vec furthest_point_of_aabb_2(const AABB &bb, const Vec &from)
 
     return r;
 }
-void run_furthest_1(AABB *boxes, size_t boxes_count, Vec *pos)
+Vec furthest_point_of_aabb_3(const AABB &bb, const Vec &from)
 {
-	std::vector<Vec> result;
-	result.resize(boxes_count);
-	auto start = std::chrono::high_resolution_clock::now();
-	for (size_t n = 0; n < 1000; n++)
-	{
-		for (size_t i = 0; i < boxes_count; i++)
-		{
-			result[i] = furthest_point_of_aabb(boxes[i], *pos);
-		}
-	}
-	auto end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end - start;
+    Vec r;
+    double cx = (bb.min.x + bb.max.x) * 0.5;
+    double cy = (bb.min.y + bb.max.y) * 0.5;
+    double cz = (bb.min.z + bb.max.z) * 0.5;
 
-	Vec r_vec = result[std::rand() % result.size()];
-	fprintf(stderr, "Time furthest 1 is %f with x y z beign %f %f %f\n", elapsed_seconds.count(), r_vec.x, r_vec.y, r_vec.z);
+    if (from.x >= cx)
+        if (from.y >= cy)
+            if (from.z >= cz)
+                r.set(bb.min.x, bb.min.y, bb.min.z);
+            else
+                r.set(bb.min.x, bb.min.y, bb.max.z);
+        else
+            if (from.z >= cz)
+                r.set(bb.min.x, bb.max.y, bb.min.z);
+            else
+                r.set(bb.min.x, bb.max.y, bb.max.z);
+    else
+        if (from.y >= cy)
+            if (from.z >= cz)
+                r.set(bb.max.x, bb.min.y, bb.min.z);
+            else
+                r.set(bb.max.x, bb.min.y, bb.max.z);
+        else
+            if (from.z >= cz)
+                r.set(bb.max.x, bb.max.y, bb.min.z);
+            else
+                r.set(bb.max.x, bb.max.y, bb.max.z);
+
+    return r;
 }
 
-void run_furthest_2(AABB *boxes, size_t boxes_count, Vec *pos)
-{
-	std::vector<Vec> result;
-	result.resize(boxes_count);
-	auto start = std::chrono::high_resolution_clock::now();
-	for (size_t n = 0; n < 1000; n++)
-	{
-		for (size_t i = 0; i < boxes_count; i++)
-		{
-			result[i] = furthest_point_of_aabb_2(boxes[i], *pos);
-		}
-	}
-	auto end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end - start;
+generate_run_function(furthest_point_of_aabb);
+generate_run_function(furthest_point_of_aabb_2);
+generate_run_function(furthest_point_of_aabb_3);
 
-	Vec r_vec = result[std::rand() % result.size()];
-	fprintf(stderr, "Time furthest 2 is %f with x y z beign %f %f %f\n", elapsed_seconds.count(), r_vec.x, r_vec.y, r_vec.z);
-}
 int main()
 {
 	std::vector<AABB> boxes;
 	boxes.resize(1 << 20);
 	Vec pos;
 	setup(boxes.data(), boxes.size(), &pos);
-	run_furthest_1(boxes.data(), boxes.size(), &pos);
-	run_furthest_2(boxes.data(), boxes.size(), &pos);
+	run_furthest_point_of_aabb(boxes.data(), boxes.size(), &pos);
+	run_furthest_point_of_aabb_2(boxes.data(), boxes.size(), &pos);
+	run_furthest_point_of_aabb_3(boxes.data(), boxes.size(), &pos);
 	return 0;
 }
