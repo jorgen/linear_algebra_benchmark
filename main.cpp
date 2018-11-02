@@ -108,6 +108,12 @@ void setup(AABB *boxes, size_t boxes_size, Vec *pos)
 		{
 			box.min.p[i] = ran_list[ran_index++ % ran_list.size()];
 			box.max.p[i] = ran_list[ran_index++ % ran_list.size()];
+			if (box.max.x < box.min.x)
+				std::swap(box.min.x, box.max.x);
+			if (box.max.y < box.min.y)
+				std::swap(box.min.y, box.max.y);
+			if (box.max.z < box.min.z)
+				std::swap(box.min.z, box.max.z);
 		}
 	}
 	for (int i = 0; i < 3; i++)
